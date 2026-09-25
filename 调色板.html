@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎨 交互调色板 · HSL</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f0f2f5;
+      font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+      padding: 16px;
+    }
+
+    .palette-card {
+      background: white;
+      border-radius: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.05);
+      padding: 32px;
+      width: 100%;
+      max-width: 550px;
+      transition: all 0.2s;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #3b82f6, #a855f7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* 大色块预览 */
+    .color-preview {
+      width: 100%;
+      height: 180px;
+      border-radius: 24px;
+      margin-bottom: 28px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 8px 18px rgba(0, 0, 0, 0.08);
+      transition: background-color 0.1s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: #3b82f6;
+    }
+
+    /* 滑块组 */
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .slider-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #334155;
+    }
+
+    .slider-label span:last-child {
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #3b82f6;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: 0.1s;
+      cursor: grab;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #f8fafc;
+      border-color: #2563eb;
+    }
+
+    input[type=range]::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.05);
+    }
+
+    /* 每个滑块的渐变背景 */
+    .hue-range {
+      background: linear-gradient(to right, 
+        #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+    }
+
+    .saturation-range {
+      background: linear-gradient(to right, #808080, #ff0000);
+    }
+
+    .lightness-range {
+      background: linear-gradient(to right, #000000, #ff0000, #ffffff);
+    }
+
+    /* 数值显示卡 */
+    .values-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .value-card {
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 20px;
+      flex: 1;
+      min-width: 100px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+      transition: background 0.15s;
+    }
+
+    .value-card .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .value-card .number {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0f172a;
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    }
+
+    /* HEX 区域 */
+    .hex-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f1f5f9;
+      padding: 10px 16px;
+      border-radius: 40px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 12px;
+    }
+
+    .hex-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 0.9rem;
+      letter-spacing: 0.02em;
+    }
+
+    .hex-value {
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #0f172a;
+      background: white;
+      padding: 6px 16px;
+      border-radius: 30px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #cbd5e1;
+      letter-spacing: 0.5px;
+    }
+
+    .copy-btn {
+      background: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      transition: all 0.15s;
+      margin-top: 4px;
+    }
+
+    .copy-btn:hover {
+      background: #f8fafc;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+
+    .copy-btn:active {
+      transform: scale(0.98);
+    }
+
+    .copy-btn.copied {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+    }
+
+    /* 响应式 */
+    @media (max-width: 480px) {
+      .palette-card {
+        padding: 20px;
+      }
+      .color-preview {
+        height: 140px;
+      }
+      .value-card .number {
+        font-size: 1rem;
+      }
+      .hex-value {
+        font-size: 1rem;
+        padding: 4px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="palette-card">
+    <h1>
+      <span>调色板</span> 
+      <span style="font-size: 1.4rem;">🎨</span>
+    </h1>
+
+    <!-- 实时预览色块 -->
+    <div class="color-preview" id="colorPreview"></div>
+
+    <!-- HSL 滑块 -->
+    <div class="slider-group">
+      <!-- 色相 H -->
+      <div class="slider-item">
+        <div class="slider-label">
+          <span>色相 H</span>
+          <span id="hueValue">210°</span>
+        </div>
+        <input type="range" id="hueSlider" class="hue-range" min="0" max="360" value="210" step="1">
+      </div>
+
+      <!-- 饱和度 S -->
+      <div class="slider-item">
+        <div class="slider-label">
+          <span>饱和度 S</span>
+          <span id="saturationValue">80%</span>
+        </div>
+        <input type="range" id="saturationSlider" class="saturation-range" min="0" max="100" value="80" step="1">
+      </div>
+
+      <!-- 明度 L -->
+      <div class="slider-item">
+        <div class="slider-label">
+          <span>明度 L</span>
+          <span id="lightnessValue">60%</span>
+        </div>
+        <input type="range" id="lightnessSlider" class="lightness-range" min="0" max="100" value="60" step="1">
+      </div>
+    </div>
+
+    <!-- HSL 数值显示 -->
+    <div class="values-row">
+      <div class="value-card">
+        <div class="label">H</div>
+        <div class="number" id="hueDisplay">210</div>
+      </div>
+      <div class="value-card">
+        <div class="label">S</div>
+        <div class="number" id="saturationDisplay">80</div>
+      </div>
+      <div class="value-card">
+        <div class="label">L</div>
+        <div class="number" id="lightnessDisplay">60</div>
+      </div>
+    </div>
+
+    <!-- HEX 显示 & 复制 -->
+    <div class="hex-section">
+      <span class="hex-label">HEX</span>
+      <span class="hex-value" id="hexValue">#3B82F6</span>
+    </div>
+
+    <button class="copy-btn" id="copyBtn">
+      <span>📋</span> 复制 HEX 色值
+    </button>
+  </div>
+
+  <script>
+    (function() {
+      // DOM 元素
+      const hueSlider = document.getElementById('hueSlider');
+      const saturationSlider = document.getElementById('saturationSlider');
+      const lightnessSlider = document.getElementById('lightnessSlider');
+
+      const hueValue = document.getElementById('hueValue');
+      const saturationValue = document.getElementById('saturationValue');
+      const lightnessValue = document.getElementById('lightnessValue');
+
+      const hueDisplay = document.getElementById('hueDisplay');
+      const saturationDisplay = document.getElementById('saturationDisplay');
+      const lightnessDisplay = document.getElementById('lightnessDisplay');
+
+      const colorPreview = document.getElementById('colorPreview');
+      const hexValue = document.getElementById('hexValue');
+      const copyBtn = document.getElementById('copyBtn');
+
+      // 当前 HSL 值 (默认: 210, 80, 60 -> 近似 #3B82F6)
+      let h = 210;
+      let s = 80;
+      let l = 60;
+
+      // 初始化滑块和显示
+      function updateFromHSL() {
+        // 更新滑块背景 (为了更好的视觉反馈，动态改变一部分)
+        // 但静态渐变已经足够，不过为了精度也可以动态更新，这里保留静态渐变，只更新数值。
+        
+        // 更新数字显示
+        hueValue.textContent = h + '°';
+        saturationValue.textContent = s + '%';
+        lightnessValue.textContent = l + '%';
+
+        hueDisplay.textContent = h;
+        saturationDisplay.textContent = s;
+        lightnessDisplay.textContent = l;
+
+        // 计算颜色
+        const color = `hsl(${h}, ${s}%, ${l}%)`;
+        colorPreview.style.backgroundColor = color;
+
+        // 转换为 HEX 并显示
+        const hex = hslToHex(h, s, l);
+        hexValue.textContent = hex;
+      }
+
+      // HSL 转 HEX (h: 0-360, s: 0-100, l: 0-100)
+      function hslToHex(h, s, l) {
+        // 确保数值范围
+        h = ((h % 360) + 360) % 360; // 色相循环
+        s = Math.min(100, Math.max(0, s)) / 100;
+        l = Math.min(100, Math.max(0, l)) / 100;
+
+        const c = (1 - Math.abs(2 * l - 1)) * s;
+        const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+        const m = l - c / 2;
+
+        let r, g, b;
+        if (h >= 0 && h < 60) {
+          [r, g, b] = [c, x, 0];
+        } else if (h >= 60 && h < 120) {
+          [r, g, b] = [x, c, 0];
+        } else if (h >= 120 && h < 180) {
+          [r, g, b] = [0, c, x];
+        } else if (h >= 180 && h < 240) {
+          [r, g, b] = [0, x, c];
+        } else if (h >= 240 && h < 300) {
+          [r, g, b] = [x, 0, c];
+        } else {
+          [r, g, b] = [c, 0, x];
+        }
+
+        r = Math.round((r + m) * 255);
+        g = Math.round((g + m) * 255);
+        b = Math.round((b + m) * 255);
+
+        const toHex = (val) => {
+          const hex = val.toString(16).toUpperCase();
+          return hex.length === 1 ? '0' + hex : hex;
+        };
+
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      }
+
+      // 从滑块读取值并更新全局变量 + UI
+      function updateFromSliders() {
+        h = parseInt(hueSlider.value, 10);
+        s = parseInt(saturationSlider.value, 10);
+        l = parseInt(lightnessSlider.value, 10);
+        updateFromHSL();
+      }
+
+      // 当滑块变动时，更新对应的显示和颜色
+      hueSlider.addEventListener('input', (e) => {
+        h = parseInt(e.target.value, 10);
+        // 实时更新色相显示
+        hueValue.textContent = h + '°';
+        hueDisplay.textContent = h;
+        // 更新颜色预览和HEX
+        const color = `hsl(${h}, ${s}%, ${l}%)`;
+        colorPreview.style.backgroundColor = color;
+        hexValue.textContent = hslToHex(h, s, l);
+      });
+
+      saturationSlider.addEventListener('input', (e) => {
+        s = parseInt(e.target.value, 10);
+        saturationValue.textContent = s + '%';
+        saturationDisplay.textContent = s;
+        const color = `hsl(${h}, ${s}%, ${l}%)`;
+        colorPreview.style.backgroundColor = color;
+        hexValue.textContent = hslToHex(h, s, l);
+      });
+
+      lightnessSlider.addEventListener('input', (e) => {
+        l = parseInt(e.target.value, 10);
+        lightnessValue.textContent = l + '%';
+        lightnessDisplay.textContent = l;
+        const color = `hsl(${h}, ${s}%, ${l}%)`;
+        colorPreview.style.backgroundColor = color;
+        hexValue.textContent = hslToHex(h, s, l);
+      });
+
+      // 初始化: 设置滑块和显示
+      function init() {
+        // 设置滑块初始值 (和全局变量一致)
+        hueSlider.value = h;
+        saturationSlider.value = s;
+        lightnessSlider.value = l;
+
+        // 更新所有显示
+        updateFromHSL();
+      }
+
+      // 复制 HEX 到剪贴板
+      copyBtn.addEventListener('click', async () => {
+        const hexText = hexValue.textContent;
+        try {
+          await navigator.clipboard.writeText(hexText);
+          // 视觉反馈
+          copyBtn.classList.add('copied');
+          copyBtn.innerHTML = '<span>✅</span> 已复制!';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = '<span>📋</span> 复制 HEX 色值';
+          }, 1500);
+        } catch (err) {
+          // 降级方案
+          const textArea = document.createElement('textarea');
+          textArea.value = hexText;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          copyBtn.classList.add('copied');
+          copyBtn.innerHTML = '<span>✅</span> 已复制!';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = '<span>📋</span> 复制 HEX 色值';
+          }, 1500);
+        }
+      });
+
+      // 启动
+      init();
+    })();
+  </script>
+</body>
+</html>
